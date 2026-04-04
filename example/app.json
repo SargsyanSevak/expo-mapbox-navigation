@@ -1,0 +1,82 @@
+{
+  "expo": {
+    "name": "Expo Mapbox Navigation Example",
+    "slug": "expo_mapbox_navigation_example",
+    "version": "1.0.0",
+    "icon": "./assets/images/icon.png",
+    "scheme": "myapp",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.example.expo-mapbox-navigation",
+      "infoPlist": {
+        "MBXAccessToken": "pk.eyJ1Ijoic2FyZ3N5YW5zZXZhayIsImEiOiJjbWV3aHRkeTAwc2t0MnFzZDJ0eTE5bjdoIn0.XuoyLU-rFsTMUQMI0argtw",
+        "NSLocationWhenInUseUsageDescription": "We need your location to provide navigation directions",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "We need your location to provide turn-by-turn navigation even when the app is in the background",
+        "NSLocationAlwaysUsageDescription": "We need your location to provide navigation directions",
+        "NSMotionUsageDescription": "We use motion data to improve navigation accuracy",
+        "UIBackgroundModes": ["audio", "location"]
+      }
+    },
+    "android": {
+      "permissions": [
+    "ACCESS_FINE_LOCATION",
+    "ACCESS_COARSE_LOCATION",
+    "ACCESS_BACKGROUND_LOCATION",
+    "FOREGROUND_SERVICE"
+  ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.example.expo_mapbox_navigation"
+    },
+    "web": {
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      [
+      "expo-location",
+      {
+        "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location.",
+        "isAndroidBackgroundLocationEnabled": true,
+        "isAndroidForegroundServiceEnabled": true,
+      }
+    ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 24,
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35,
+            "buildToolsVersion": "35.0.0"
+          },
+          "ios": {
+            "deploymentTarget": "15.1",
+            "useFrameworks": "static"
+          }
+        }
+      ],
+      [
+        "@rnmapbox/maps",
+        {
+          "RNMapboxMapsDownloadToken": "k.eyJ1Ijoic2FyZ3N5YW5zZXZhayIsImEiOiJjbWwyMzNqc3EwOHNtM3JzNW1xaWJrZW1sIn0.BDtWEhnL1bXtaHBu-4mY-g",
+          "RNMapboxMapsVersion": "11.11.0"
+        }
+      ],
+      [
+        "../app.plugin.js",
+        {
+          "accessToken": "pk.eyJ1Ijoic2FyZ3N5YW5zZXZhayIsImEiOiJjbWV3aHRkeTAwc2t0MnFzZDJ0eTE5bjdoIn0.XuoyLU-rFsTMUQMI0argtw",
+          "mapboxMapsVersion": "11.11.0"
+        }
+      ]
+    ]
+  }
+}
