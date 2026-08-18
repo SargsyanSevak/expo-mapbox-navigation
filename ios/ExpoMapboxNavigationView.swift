@@ -36,6 +36,11 @@ class ExpoMapboxNavigationView: ExpoView {
     override func layoutSubviews() {
         controller.view.frame = bounds
     }
+
+    // Fires reliably when RN removes/deallocates this native view.
+    deinit {
+        controller.teardown()
+    }
 }
 
 
@@ -77,6 +82,7 @@ class ExpoMapboxNavigationViewController: UIViewController {
     private var waypointArrivalCancellable: AnyCancellable? = nil
     private var reroutingCancellable: AnyCancellable? = nil
     private var sessionCancellable: AnyCancellable? = nil
+    private var isTornDown = false
 
     init() {
         super.init(nibName: nil, bundle: nil)
@@ -85,43 +91,42 @@ class ExpoMapboxNavigationViewController: UIViewController {
         navigation = mapboxNavigation!.navigation()
         tripSession = mapboxNavigation!.tripSession()
 
-        routeProgressCancellable = navigation!.routeProgress.sink { progressState in
-            if(progressState != nil){
+        routeProgressCancellable = navigation!.routeProgress.sink { [weak self] progressState in
+            guard let self, let progressState else { return }
 
+            // For some reason the maneuver arrows sometimes (not consistently) show up the same color as the route line making them invisible.
+            // This is a hack to always ensure the arrows are visible.
+            try? self.navigationViewController?.navigationMapView?.mapView.mapboxMap.setLayerProperty(
+                for: "com.mapbox.navigation.arrow.next",
+                property: "line-color",
+                value: "#FFFFFF"
+            )
+            try? self.navigationViewController?.navigationMapView?.mapView.mapboxMap.setLayerProperty(
+                for: "com.mapbox.navigation.arrow.next.stroke",
+                property: "line-color",
+                value: "#FFFFFF"
+            )
+            try? self.navigationViewController?.navigationMapView?.mapView.mapboxMap.setLayerProperty(
+                for: "com.mapbox.navigation.arrow.next.symbol",
+                property: "icon-color",
+                value: "#FFFFFF"
+            )
+            try? self.navigationViewController?.navigationMapView?.mapView.mapboxMap.setLayerProperty(
+                for: "com.mapbox.navigation.arrow.next.symbol.casing",
+                property: "icon-color",
+                value: "#FFFFFF"
+            )
 
-                // For some reason the maneuver arrows sometimes (not consistently) show up the same color as the route line making them invisible.
-                // This is a hack to always ensure the arrows are visible.
-                try? self.navigationViewController?.navigationMapView?.mapView.mapboxMap.setLayerProperty(
-                    for: "com.mapbox.navigation.arrow.next",
-                    property: "line-color",
-                    value: "#FFFFFF" 
-                )
-                try? self.navigationViewController?.navigationMapView?.mapView.mapboxMap.setLayerProperty(
-                    for: "com.mapbox.navigation.arrow.next.stroke",
-                    property: "line-color",
-                    value: "#FFFFFF" 
-                )
-                try? self.navigationViewController?.navigationMapView?.mapView.mapboxMap.setLayerProperty(
-                    for: "com.mapbox.navigation.arrow.next.symbol",
-                    property: "icon-color",
-                    value: "#FFFFFF" 
-                )
-                try? self.navigationViewController?.navigationMapView?.mapView.mapboxMap.setLayerProperty(
-                    for: "com.mapbox.navigation.arrow.next.symbol.casing",
-                    property: "icon-color",
-                    value: "#FFFFFF" 
-                )
-                
-               self.onRouteProgressChanged?([
-                    "distanceRemaining": progressState!.routeProgress.distanceRemaining,
-                    "distanceTraveled": progressState!.routeProgress.distanceTraveled,
-                    "durationRemaining": progressState!.routeProgress.durationRemaining,
-                    "fractionTraveled": progressState!.routeProgress.fractionTraveled,
-                ])
-            }
+            self.onRouteProgressChanged?([
+                "distanceRemaining": progressState.routeProgress.distanceRemaining,
+                "distanceTraveled": progressState.routeProgress.distanceTraveled,
+                "durationRemaining": progressState.routeProgress.durationRemaining,
+                "fractionTraveled": progressState.routeProgress.fractionTraveled,
+            ])
         }
 
-        waypointArrivalCancellable = navigation!.waypointsArrival.sink { arrivalStatus in
+        waypointArrivalCancellable = navigation!.waypointsArrival.sink { [weak self] arrivalStatus in
+            guard let self else { return }
             let event = arrivalStatus.event
             if event is WaypointArrivalStatus.Events.ToFinalDestination {
                 self.onFinalDestinationArrival?()
@@ -130,11 +135,12 @@ class ExpoMapboxNavigationViewController: UIViewController {
             }
         }
 
-        reroutingCancellable = navigation!.rerouting.sink { rerouteStatus in
-            self.onRouteChanged?()            
+        reroutingCancellable = navigation!.rerouting.sink { [weak self] _ in
+            self?.onRouteChanged?()
         }
 
-        sessionCancellable = tripSession!.session.sink { session in 
+        sessionCancellable = tripSession!.session.sink { [weak self] session in
+            guard let self else { return }
             let state = session.state
             switch state {
                 case .activeGuidance(let activeGuidanceState):
@@ -149,11 +155,32 @@ class ExpoMapboxNavigationViewController: UIViewController {
 
     }
 
-    deinit {
+    // Explicit, idempotent teardown. Called from the owning ExpoView's deinit
+    // so cleanup happens as soon as RN removes the native view, instead of
+    // relying on viewDidDisappear (unreliable here, since this controller
+    // isn't added through normal UIKit containment) or this controller's own
+    // deinit (which previously never ran due to a retain cycle in the sinks).
+    func teardown() {
+        guard !isTornDown else { return }
+        isTornDown = true
+
         routeProgressCancellable?.cancel()
         waypointArrivalCancellable?.cancel()
         reroutingCancellable?.cancel()
         sessionCancellable?.cancel()
+        routeProgressCancellable = nil
+        waypointArrivalCancellable = nil
+        reroutingCancellable = nil
+        sessionCancellable = nil
+
+        Task { @MainActor [tripSession] in
+            tripSession?.setToIdle()
+        }
+    }
+
+    deinit {
+        // Fallback safety net in case teardown() wasn't called explicitly.
+        teardown()
     }
 
     override func viewDidDisappear(_ animated: Bool) {
@@ -334,15 +361,16 @@ class ExpoMapboxNavigationViewController: UIViewController {
             distanceUnit: currentLocale.usesMetricSystem ? LengthFormatter.Unit.meter : LengthFormatter.Unit.mile
         )
 
-        calculateRoutesTask = Task {
+        calculateRoutesTask = Task { [weak self] in
+            guard let self else { return }
             switch await self.routingProvider!.calculateRoutes(options: routeOptions).result {
             case .failure(let error):
-                onRouteFailedToLoad?([
+                self.onRouteFailedToLoad?([
                     "errorMessage": error.localizedDescription
                 ])
                 print(error.localizedDescription)
             case .success(let navigationRoutes):
-                onRoutesCalculated(navigationRoutes: navigationRoutes)
+                self.onRoutesCalculated(navigationRoutes: navigationRoutes)
             }
         }
     }
@@ -357,15 +385,16 @@ class ExpoMapboxNavigationViewController: UIViewController {
         matchOptions.locale = currentLocale
 
 
-        calculateRoutesTask = Task {
+        calculateRoutesTask = Task { [weak self] in
+            guard let self else { return }
             switch await self.routingProvider!.calculateRoutes(options: matchOptions).result {
             case .failure(let error):
-                onRouteFailedToLoad?([
+                self.onRouteFailedToLoad?([
                     "errorMessage": error.localizedDescription
                 ])
                 print(error.localizedDescription)
             case .success(let navigationRoutes):
-                onRoutesCalculated(navigationRoutes: navigationRoutes)
+                self.onRoutesCalculated(navigationRoutes: navigationRoutes)
             }
         }
     }
@@ -456,7 +485,8 @@ class ExpoMapboxNavigationViewController: UIViewController {
         }
 
         let style = currentMapStyle != nil ? StyleURI(rawValue: currentMapStyle!) : StyleURI.streets
-        navigationMapView!.mapView.mapboxMap.loadStyle(style!, completion: { _ in
+        navigationMapView!.mapView.mapboxMap.loadStyle(style!, completion: { [weak self] _ in
+            guard let self else { return }
             navigationMapView!.localizeLabels(locale: self.currentLocale)
             do{
                 try navigationMapView!.mapView.mapboxMap.localizeLabels(into: self.currentLocale)
