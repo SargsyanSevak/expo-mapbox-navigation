@@ -1,222 +1,269 @@
-# Expo Mapbox Navigation
+<div align="center">
 
-A simple Expo wrapper for Mapbox's navigation SDK's on Android and iOS
+# 🧭 Expo Mapbox Navigation
 
-## Installation
+**Turn-by-turn navigation for Expo apps, powered by the native Mapbox Navigation SDK.**
 
-### `@rnmapbox/maps`
+Drop one component into your app and get voice guidance, rerouting, traffic-aware routes and live progress events on iOS and Android.
 
-This package relies on the installtion of `@rnmapbox/maps`, so you'll have to install and setup as explained in their [installtion instructions](https://rnmapbox.github.io/docs/install). The current version of **Expo Mapbox Navigation** package was developed and tested for Mapbox Maps version `11.11.0`, so that is the recommended version when setting up the maps package. It is possible that everything will work with a later version, but unlikely with a lower version. **However, make sure you explcitly set the version with `RNMapboxMapsVersion` because this package relies on this being set to work**
+[![npm version](https://img.shields.io/npm/v/@sargsyansevak/expo-mapbox-navigation?style=for-the-badge&color=4264fb&logo=npm)](https://www.npmjs.com/package/@sargsyansevak/expo-mapbox-navigation)
+[![npm downloads](https://img.shields.io/npm/dm/@sargsyansevak/expo-mapbox-navigation?style=for-the-badge&color=4264fb)](https://www.npmjs.com/package/@sargsyansevak/expo-mapbox-navigation)
+[![license](https://img.shields.io/npm/l/@sargsyansevak/expo-mapbox-navigation?style=for-the-badge&color=4264fb)](./LICENSE)
 
-> [!NOTE]  
-> Make sure to follow the instructions carefully and include the proper token in the config plugin and to call the `Mapbox.setAccessToken` function. You can be sure everything is good when you're able to render a map.
+![iOS](https://img.shields.io/badge/iOS-000000?style=flat-square&logo=apple&logoColor=white)
+![Android](https://img.shields.io/badge/Android-3DDC84?style=flat-square&logo=android&logoColor=white)
+![Expo](https://img.shields.io/badge/Expo-000020?style=flat-square&logo=expo&logoColor=white)
+![Mapbox](https://img.shields.io/badge/Mapbox-000000?style=flat-square&logo=mapbox&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
 
-### Install package
+[Install](#-installation) · [Quick start](#-quick-start) · [Props](#-props) · [Events](#-events) · [Contributing](#-for-contributors)
 
-**Install via npm (recommended):**
+</div>
+
+---
+
+## ✨ Features
+
+|     |                                                                         |
+| --- | ----------------------------------------------------------------------- |
+| 🗣️  | **Voice guidance** in the device language, or any locale you choose     |
+| 🚦  | **Traffic-aware routing** with driving, walking and cycling profiles    |
+| 🔀  | **Multi-stop routes** with fine control over which points are waypoints |
+| 🛣️  | **Map Matching** for routes that follow your exact coordinates          |
+| 🚛  | **Vehicle limits** to avoid roads too low or too narrow for your truck  |
+| 🎨  | **Custom styling**: map styles, raster tile overlays, Android colors    |
+| 📡  | **Live events** for progress, arrivals, reroutes and off-route          |
+
+---
+
+## 📦 Installation
+
+### 1. Set up `@rnmapbox/maps`
+
+This package builds on [`@rnmapbox/maps`](https://rnmapbox.github.io/docs/install). Install and configure it first by following their instructions.
+
+> [!IMPORTANT]
+> - Developed and tested with Mapbox Maps **`11.11.0`**. Newer versions will probably work; older ones probably won't.
+> - You **must** set the version explicitly with `RNMapboxMapsVersion`. This package depends on it.
+> - Remember to add your token to the config plugin **and** call `Mapbox.setAccessToken`. If you can render a plain map, you're good to go.
+
+### 2. Install the package
 
 ```bash
 npm install @sargsyansevak/expo-mapbox-navigation
 ```
 
-Or directly from GitHub:
+<details>
+<summary>Or install straight from GitHub</summary>
 
 ```json
-// package.json
 "dependencies": {
   "@sargsyansevak/expo-mapbox-navigation": "github:sargsyansevak/expo-mapbox-navigation"
 }
 ```
 
-### Configure package
+</details>
 
-In your `app.json` or `app.js`, you'll need to add a plugin for the package under the `plugins` entry with a valid mapbox access token (The one that starts with `pk.`). For the mapbox maps version, you have to use the same version set in the setup steps of `@rnmapbox/maps`.
+### 3. Configure the plugin
+
+Add the plugin to `app.json` / `app.config.js` with your public Mapbox token (starts with `pk.`) and the same Mapbox Maps version you used for `@rnmapbox/maps`. iOS also needs static frameworks, which you can enable with `expo-build-properties`:
 
 ```json
-"plugins": [
-    ...other plugins
-     [
+{
+  "expo": {
+    "plugins": [
+      [
         "@sargsyansevak/expo-mapbox-navigation",
         {
-          "accessToken": "<YOUR_TOKEN>",
-          "mapboxMapsVersion": "<MAPBOX_MAPS_VERSION>"
-        }
-      ]
-]
-```
-
-Additionally you need to enable `useFrameworks` in your ios config. This can be achieved by using the `expo-build-properties` package and plugin as follows:
-
-```json
-"plugins": [
-    ...other plugins
-     [
-        "expo-build-properties",
-        {
-          "ios": {
-            "useFrameworks": "static"
-          }
+          "accessToken": "pk.YOUR_TOKEN",
+          "mapboxMapsVersion": "11.11.0"
         }
       ],
-]
-```
-
-#### More notes on plugin
-
-The plugin also has a `androidColorOverrides` field which allows you to define resource colors in the android app. This is particualrly useful to override some of the predefined mapbox colors and customize the apperance of the components. It is somewhat tricky to find which colors to change, but looking through the [mapbox repo](https://github.com/mapbox/mapbox-navigation-android/blob/main/ui-components/src/main/res/values/colors-maneuver.xml) may help
-
-```json
-"plugins": [
-    ...other plugins
-     [
-        "@sargsyansevak/expo-mapbox-navigation",
+      [
+        "expo-build-properties",
         {
-          "accessToken": "<YOUR_TOKEN>",
-          "mapboxMapsVersion": "<MAPBOX_MAPS_VERSION>",
-          "androidColorOverrides": {
-            "mapbox_main_maneuver_background_color": "#FF0000"
-          }
+          "ios": { "useFrameworks": "static" }
         }
       ]
+    ]
+  }
+}
+```
+
+| Option                  | Type                     | Description                                                     |
+| ----------------------- | ------------------------ | --------------------------------------------------------------- |
+| `accessToken`           | `string`                 | Your public Mapbox access token (`pk.…`)                        |
+| `mapboxMapsVersion`     | `string`                 | Must match the version used for `@rnmapbox/maps`                |
+| `androidColorOverrides` | `Record<string, string>` | Override Android color resources used by the Mapbox UI (see below) |
+
+<details>
+<summary>🎨 Customizing Android colors</summary>
+
+`androidColorOverrides` lets you redefine Android color resources, which is handy for restyling the built-in Mapbox components. Finding the right names takes some digging; the [Mapbox Android repo](https://github.com/mapbox/mapbox-navigation-android/blob/main/ui-components/src/main/res/values/colors-maneuver.xml) is the best place to look.
+
+```json
+[
+  "@sargsyansevak/expo-mapbox-navigation",
+  {
+    "accessToken": "pk.YOUR_TOKEN",
+    "mapboxMapsVersion": "11.11.0",
+    "androidColorOverrides": {
+      "mapbox_main_maneuver_background_color": "#FF0000"
+    }
+  }
 ]
 ```
 
-### Usage
+</details>
 
-After getting location permissions you can render the navigation map as follows anywhere in the app
+Then rebuild your native app:
 
+```bash
+npx expo prebuild --clean
+npx expo run:ios   # or run:android
 ```
-<MapboxNavigationView
-    style={{ flex: 1 }}
-    coordinates={coordinates} />
-```
 
-## Props
+---
 
-#### `coordinates`
+## 🚀 Quick start
 
-An array of `{latitude: number, longitude: number}` objects. This creates a route passing through all the given coordinates. Requires at least 2 points for start and end destinations.
+Once the user has granted location permission, render the view anywhere:
 
-#### `waypointIndices`
+```tsx
+import { MapboxNavigationView } from "@sargsyansevak/expo-mapbox-navigation";
 
-An array of indices representing which of the coordinates is to be considered a waypoint/destination. By default all coordinates are considered waypoints (and show a waypoint indicator), passing this prop allows choosing which of the coordinates are waypoints. At least the first and last element need to be included in the array for a route to render.
-
-#### `useRouteMatchingApi`
-
-When enabled, uses Mapbox's Map Matching API to generate the route instead of the regular navigation route generation APIs. Enable this when you want a more explicit path determined by the coordinates. [Mapbox Map Matching API](https://docs.mapbox.com/api/navigation/map-matching/)
-
-#### `locale`
-
-A string representation of a locale/language code that adjusts the Map labels, directions, and voice where possible. By default, uses the devices locale.
-
-#### `routeProfile`
-
-The profile to use for route generation. `mapbox/driving-traffic` by default. See [here](https://docs.mapbox.com/api/navigation/directions/#routing-profiles) for details. NOTE: For android, you need to omit the `mapbox/` prefix.
-
-#### `routeExcludeList`
-
-An array of road types and locations to exclude from the route. See the `exclude` param [here](https://docs.mapbox.com/api/navigation/directions/#optional-parameters) for details.
-
-#### `mapStyle`
-
-The style of the Mapbox map. See [here](https://docs.mapbox.com/api/maps/styles/) for details.
-
-#### `mute`
-
-Whether the navigation audio is initially muted.
-
-#### `vehicleMaxHeight`
-
-The maximum height of the vehicle in meters. This is used to avoid routes with height restrictions.
-
-#### `vehicleMaxWidth`
-
-The maximum width of the vehicle in meters. This is used to avoid routes with width restrictions.
-
-#### `customRasterSourceUrl`
-
-The URL of a custom raster source to use for the map. Should be a template string with `{x}`, `{y}`, `{z}` placeholders.  
-Example: `"https://tile.openstreetmap.org/{z}/{x}/{y}.png"`
-
-#### `placeCustomRasterLayerAbove`
-
-The ID of the layer above which the custom raster layer should be placed. Useful for controlling the rendering order of map layers.
-
-#### `disableAlternativeRoutes`
-
-If true, disables calculation and display of alternative routes. By default, alternative routes may be shown if available.
-
-#### `onRouteProgressChanged`
-
-Called when the user's progress on the route changes.
-Provides an object in the `nativeEvent` of type:
-
-```ts
-{
-  distanceRemaining: number;
-  distanceTraveled: number;
-  durationRemaining: number;
-  fractionTraveled: number;
+export default function NavigationScreen() {
+  return (
+    <MapboxNavigationView
+      style={{ flex: 1 }}
+      coordinates={[
+        { latitude: 40.1772, longitude: 44.5035 }, // start
+        { latitude: 40.1872, longitude: 44.5152 }, // destination
+      ]}
+      onRouteProgressChanged={({ nativeEvent }) => {
+        console.log(`${Math.round(nativeEvent.distanceRemaining)} m to go`);
+      }}
+      onCancelNavigation={() => {
+        /* leave the navigation screen */
+      }}
+      onFinalDestinationArrival={() => console.log("You have arrived 🎉")}
+    />
+  );
 }
 ```
 
-#### `onCancelNavigation`
+---
 
-Called when the cancel navigation button is clicked. The library does not handle cancellation automatically, use this callback to handle the cancellation behaviour.
+## ⚙️ Props
 
-#### `onWaypointArrival`
+### Route
 
-Called when arrived at one of the given waypoints.
-On **Android ONLY** provides an object in the `nativeEvent` of type:
+| Prop                       | Type                                    | Default                  | Description                                                                                                                                                                                       |
+| -------------------------- | --------------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `coordinates` **required** | `{ latitude, longitude }[]`             | –                        | Points the route passes through. At least 2 (start and end).                                                                                                                                      |
+| `waypointIndices`          | `number[]`                              | all points               | Which coordinates count as waypoints (and get a marker). Must include the first and last index.                                                                                                   |
+| `useRouteMatchingApi`      | `boolean`                               | `false`                  | Build the route with the [Map Matching API](https://docs.mapbox.com/api/navigation/map-matching/) so it follows your coordinates closely.                                                         |
+| `routeProfile`             | `string`                                | `mapbox/driving-traffic` | [Routing profile](https://docs.mapbox.com/api/navigation/directions/#routing-profiles). ⚠️ On Android, drop the `mapbox/` prefix.                                                                 |
+| `routeExcludeList`         | `string[]`                              | –                        | Road types or locations to avoid. See the [`exclude` param](https://docs.mapbox.com/api/navigation/directions/#optional-parameters).                                                              |
+| `disableAlternativeRoutes` | `boolean`                               | `false`                  | Don't calculate or show alternative routes.                                                                                                                                                       |
+| `vehicleMaxHeight`         | `number`                                | –                        | Vehicle height in meters. Avoids roads with height limits.                                                                                                                                        |
+| `vehicleMaxWidth`          | `number`                                | –                        | Vehicle width in meters. Avoids roads with width limits.                                                                                                                                          |
 
-```ts
-{
-  distanceRemaining: number;
-  distanceTraveled: number;
-  durationRemaining: number;
-  fractionTraveled: number;
-}
+### Map & guidance
+
+| Prop                          | Type                                     | Default       | Description                                                                                       |
+| ----------------------------- | ---------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------- |
+| `locale`                      | `string`                                 | device locale | Language for map labels, instructions and voice.                                                  |
+| `mute`                        | `boolean`                                | `false`       | Start with voice guidance muted.                                                                  |
+| `mapStyle`                    | `string`                                 | Mapbox default | [Map style URL](https://docs.mapbox.com/api/maps/styles/).                                       |
+| `customRasterSourceUrl`       | `string`                                 | –             | Tile URL template with `{x}`, `{y}`, `{z}`, e.g. `https://tile.openstreetmap.org/{z}/{x}/{y}.png` |
+| `placeCustomRasterLayerAbove` | `string`                                 | –             | Layer ID to place the custom raster layer above.                                                  |
+| `initialLocation` 🍎          | `{ latitude, longitude, zoom? }`         | –             | Where the camera starts before the route loads. Zoom defaults to `15`.                            |
+| `followingZoom` 🍎            | `number`                                 | –             | Camera zoom level while following the user.                                                       |
+| `style`                       | `StyleProp<ViewStyle>`                   | –             | Standard view style.                                                                              |
+
+<sub>🍎 = iOS only</sub>
+
+### Ref methods
+
+```tsx
+const navRef = useRef<MapboxNavigationViewRef>(null);
+
+<MapboxNavigationView ref={navRef} coordinates={coordinates} />;
+
+navRef.current?.recenterMap(); // 🍎 iOS only
 ```
 
-#### `onFinalDestinationArrival`
+---
 
-Called when arrived at the final destination
+## 📡 Events
 
-#### `onRouteChanged`
+| Event                       | Payload (`nativeEvent`)                   | Fired when                                                                                         |
+| --------------------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `onRouteProgressChanged`    | `ProgressEvent`                           | The user's progress along the route updates                                                        |
+| `onCancelNavigation`        | –                                         | The cancel button is tapped. **You handle what happens next** (e.g. navigate back).               |
+| `onWaypointArrival`         | `ProgressEvent` (Android) / – (iOS)       | The user reaches a waypoint                                                                        |
+| `onFinalDestinationArrival` | –                                         | The user reaches the final destination                                                             |
+| `onRouteChanged`            | –                                         | The route changes or the user is rerouted                                                          |
+| `onUserOffRoute`            | –                                         | The user leaves the route                                                                          |
+| `onRoutesLoaded`            | `{ routes: { mainRoute, alternativeRoutes } }` | Routes finish loading                                                                         |
+| `onRouteFailedToLoad`       | `{ errorMessage: string }`                | The route couldn't be built                                                                        |
 
-Called when the route changes or reroutes
+```ts
+type ProgressEvent = {
+  distanceRemaining: number; // meters
+  distanceTraveled: number; // meters
+  durationRemaining: number; // seconds
+  fractionTraveled: number; // 0 → 1
+};
+```
 
-#### `onUserOffRoute`
+---
 
-Called when the user goes off route
+## 🛠 For contributors
 
-#### `onRoutesLoaded`
+### Running the example app
 
-Called when routes are finished loading.
+```bash
+yarn            # in the repo root
+cd example
+yarn
+npx expo run:ios   # or run:android
+```
 
-## Running the example app
+### Updating the Mapbox SDK versions
 
-- Run `yarn` on the root directory
-- `cd example`
-- Run `yarn` on the example app
-- Run the app using `npx expo run:android` / `npx expo run:ios`
+**Android** pulls Mapbox from Gradle, so updating is just a version bump.
 
-## Note on Mapbox version updates (for collaborators)
+**iOS** is trickier. Mapbox Navigation SDK v3 ships only through Swift Package Manager (no CocoaPods yet), and there's no clean way to consume an SPM package from an Expo module. So this package bundles prebuilt `.xcframework` files instead.
 
-The Android implmentation uses the gradle dependencies and can easily be updated to newer versions.
+> [!NOTE]
+> CocoaPods support is reportedly on the way. Once it lands, this whole process can get much simpler.
 
-iOS, however, bundles the Mapbox Navigation SDK into the expo module to be used. As of the date of writing this, the Mapbox Navigation SDK v3 does not support cocoapods and only supports Swift package manager. There is no obvious way on how one can include a package from the Swift package manager into an Expo module, so I opted to bundle the `.xcframework` package instead.
+<details>
+<summary><b>Building the <code>.xcframework</code> files</b></summary>
 
-> [!NOTE]  
-> Cocoapods support is apparently comming soon. When that day comes, this process can be made much easier.
+<br>
 
-### Getting the `.xcframework` files
+1. Configure `~/.netrc` with your Mapbox credentials.
+2. Clone [mapbox-navigation-ios](https://github.com/mapbox/mapbox-navigation-ios) at the version branch you want.
+3. Replace its `Package.swift` with the one below, updating the versions to match the branch.
+4. Run `swift build -c release`. It will fail and print the correct `navNativeChecksum`. Update the file with it, then move on (don't re-run).
+5. Clone [Scipio](https://github.com/giginet/Scipio/) **inside** the mapbox-navigation-ios repo, `cd` into it and run `swift build -c release`.
+6. Still inside Scipio, run:
 
-First make sure .netrc is configured with your mapbox credentials.
+```bash
+swift run -c release scipio create ../ -f \
+    --platforms iOS \
+    --only-use-versions-from-resolved-file \
+    --enable-library-evolution \
+    --support-simulators \
+    --embed-debug-symbols \
+    --verbose
+```
 
-Clone https://github.com/mapbox/mapbox-navigation-ios from the desired version branch.
-
-Use this modified `Package.swift` and update the versions according to the cloned branch. Checksum for `navNativeChecksum` will be incorrect. Run `swift build -c release` which will fail and give you the correct checksum to update with. After updating, proceed with steps, do not re-run.
+<details>
+<summary>Modified <code>Package.swift</code></summary>
 
 ```swift
 // swift-tools-version:5.7
@@ -296,18 +343,18 @@ private func navNativeBinaryTarget(name: String, version: String, checksum: Stri
 }
 ```
 
-Clone https://github.com/giginet/Scipio/ **inside** the cloned mapbox-navigation-ios repo. `cd` inside that repo and run `swift build -c release`.
+</details>
 
-While still in the Scipio repo run
+Based on [this comment](https://github.com/mapbox/mapbox-navigation-ios/issues/4703#issuecomment-2297452009) in mapbox-navigation-ios.
 
-```
-swift run -c release scipio create ../ -f \
-    --platforms iOS  \
-    --only-use-versions-from-resolved-file \
-    --enable-library-evolution \
-    --support-simulators \
-    --embed-debug-symbols \
-    --verbose
-```
+</details>
 
-Based on https://github.com/mapbox/mapbox-navigation-ios/issues/4703#issuecomment-2297452009
+---
+
+<div align="center">
+
+MIT © [@SargsyanSevak](https://github.com/SargsyanSevak)
+
+If this saved you time, consider giving it a ⭐ on [GitHub](https://github.com/SargsyanSevak/expo-mapbox-navigation)!
+
+</div>
